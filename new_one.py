@@ -294,7 +294,7 @@ def get_batch(split):
 def estimate_loss():
     out = {}
     model.eval()
-    for split in ["train", "eval"]:
+    for split in ["train", "val"]:
         losses = torch.zeros(eval_iters)
         for k in range(eval_iters):
             Xin, Xout, Yin, Yout = get_batch(split)
