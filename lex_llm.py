@@ -17,7 +17,7 @@ import json
 
 
 # Enable/disable training mode and the reprocessing of training data located in reservoir
-training_mode = False
+training_mode = True
 reprocess_data = False
 small_batch_validation_output = False # Displays snapshot of tensor indices during vectorisation process
 
@@ -42,7 +42,7 @@ clip = 50.0
 teacher_forcing_ratio = 1.0
 learning_rate = 0.0001
 decoder_learning_ratio = 5.0
-n_iteration = 4000
+n_iteration = 100
 checkpoint_iter = 4000 # If using already trained model, set to total iterations for that training data
 print_every = 1
 save_every = 500
@@ -359,6 +359,8 @@ if(small_batch_validation_output == True):
     print("target_variable:", target_variable)
     print("mask:", mask)
     print("max_target_len:", max_target_len)
+
+
 
 # EncoderRNN class
 class EncoderRNN(nn.Module):
@@ -764,7 +766,7 @@ if load_file_name:
     embedding.load_state_dict(embedding_sd)
     
 # Initialize encoder & decoder models
-encoder = EncoderRNN(hidden_size, embedding, encoder_n_layers, dropout)
+encoder = EncoderRNN(attn_model, hidden_size, embedding, encoder_n_layers, dropout)
 decoder = LuongAttnDecoderRNN(attn_model, embedding, hidden_size, voc.num_words, decoder_n_layers, dropout)
 if load_file_name:
     encoder.load_state_dict(encoder_sd)
