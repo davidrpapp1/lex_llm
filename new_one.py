@@ -32,15 +32,15 @@ MIN_COUNT = 1 # Keep any words from training data that show up equal to or more 
 
 # Configure models
 model_name = 'lex_llm' # For file saving label
-eval_interval = 10
-eval_iters = 20
-n_embed = 32
+eval_interval = 100
+eval_iters = 200
+n_embed = 64
 n_head = 6
 n_layer = 6
 dropout = 0.2
 batch_size = 64
 block_size = 19
-max_iters = 200
+max_iters = 5000
 
 
 # Configure training/optimization
@@ -453,7 +453,7 @@ while on:
     if q == "quit":
         on = False
     else:
-        context = torch.tensor(encoding.encode(q), dtype=torch.long, device=device)
+        context = torch.tensor([encoding.encode(q)], dtype=torch.long, device=device)
         print(encoding.decode(m.generate(context, max_new_tokens=block_size)[0].tolist()))
 
 # context is 1d, make it 2d (B,T)
