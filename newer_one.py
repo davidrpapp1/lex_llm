@@ -32,15 +32,15 @@ MIN_COUNT = 1 # Keep any words from training data that show up equal to or more 
 
 # Configure models
 model_name = 'lex_llm' # For file saving label
-eval_interval = 10
-eval_iters = 5
+eval_interval = 100
+eval_iters = 200
 n_embed = 64
 n_head = 6
 n_layer = 6
 dropout = 0.2
 batch_size = 64
 block_size = 19
-max_iters = 30
+max_iters = 2000
 
 
 # Configure training/optimization
@@ -471,7 +471,14 @@ class Block(nn.Module):
         x = x + self.sa(self.ln1(x))
         x = x + self.ca(self.lnc(x), enc_out)
         x = x + self.ffwd(self.ln2(x))
-        return x
+        return x, enc_out
+    
+
+class mySequential(nn.Sequential):
+    def forward(self, *input):
+        for module in self._modules.values():
+            input = module(*input)
+        return input
     
 class LangMod(nn.Module):
 
@@ -480,7 +487,7 @@ class LangMod(nn.Module):
         self.token_embedding_table = nn.Embedding(vocab_size, n_embed)
         self.position_embedding_table = nn.Embedding(block_size, n_embed)
         self.encoderblocks = nn.Sequential(*[EncoderBlock(n_embed, n_head=n_head) for _ in range(n_layer)])
-        self.blocks = nn.Sequential(*[Block(n_embed, n_head=n_head) for _ in range(n_layer)])
+        self.blocks = mySequential(*[Block(n_embed, n_head=n_head) for _ in range(n_layer)])
         self.ln_f = nn.LayerNorm(n_embed) #can be RMS norm
         self.lm_head = nn.Linear(n_embed, vocab_size)
 
@@ -507,7 +514,7 @@ class LangMod(nn.Module):
         x = tok_emb + pos_emb # (B,T,C)
 
         x_enc = self.encoderblocks(x_input)
-        x = self.blocks(x, x_enc) # (B,T,C)
+        x, x_enc = self.blocks(x, x_enc) # (B,T,C)
         x = self.ln_f(x) # (B,T,C)
         logits = self.lm_head(x) #(B,T,vocab_size)
 
@@ -562,4 +569,3 @@ while on:
         gen = torch.zeros((1,1), dtype=torch.long, device=device)
         context = torch.tensor([encoding.encode(q)], dtype=torch.long, device=device)
         print(encoding.decode(m.generate(context, gen, max_new_tokens=10)[0].tolist()))
-
