@@ -34,13 +34,13 @@ MIN_COUNT = 1 # Keep any words from training data that show up equal to or more 
 model_name = 'lex_llm' # For file saving label
 eval_interval = 100
 eval_iters = 200
-n_embed = 64
+n_embed = 128
 n_head = 6
 n_layer = 6
-dropout = 0.2
+dropout = 0.1
 batch_size = 64
 block_size = 19
-max_iters = 2000
+max_iters = 1500
 
 
 # Configure training/optimization
@@ -451,9 +451,11 @@ class EncoderBlock(nn.Module):
         self.ln2 = nn.LayerNorm(n_embed)
 
     def forward(self, x):
-        x = x + self.sa(self.ln1(x))
-        x = x + self.ffwd(self.ln2(x))
-        return x
+        att = self.sa(x)
+        x = self.ln1(att + x)
+        ff = self.ffwd(x)
+        out = self.ln2(ff + x)
+        return out
     
 class Block(nn.Module):
 
@@ -468,10 +470,14 @@ class Block(nn.Module):
         self.ln2 = nn.LayerNorm(n_embed)
 
     def forward(self, x, enc_out):
-        x = x + self.sa(self.ln1(x))
-        x = x + self.ca(self.lnc(x), enc_out)
-        x = x + self.ffwd(self.ln2(x))
-        return x, enc_out
+
+        att = self.sa(x)
+        x = self.ln1(att + x)
+        catt = self.ca(x, enc_out)
+        x = self.lnc(catt + x)
+        ff = self.ffwd(x)
+        out = self.ln2(ff + x)
+        return out, enc_out
     
 
 class mySequential(nn.Sequential):
