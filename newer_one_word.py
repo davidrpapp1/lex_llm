@@ -59,17 +59,17 @@ learning_rate = 0.0001
 USE_CUDA = torch.cuda.is_available()
 device = torch.device("cuda" if USE_CUDA else "cpu")
 
-src_tokenizer = Tokenizer(WordLevel(unk_token="<UNK>"))
+src_tokenizer = Tokenizer(WordLevel(unk_token="<unk>"))
 src_tokenizer.pre_tokenizer = Whitespace()
 src_tokenizer.normalizer = Lowercase()
-trainer = WordLevelTrainer(special_tokens=["<UNK>", "<SOS>", "<EOS>", "<PAD>"], min_frequency=2)
+trainer = WordLevelTrainer(special_tokens=["<unk>", "<sos>", "<eos>", "<pad>"], min_frequency=2)
 src_tokenizer.train(["D:/robo_data/train.source"], trainer=trainer)
 src_vocab_size = src_tokenizer.get_vocab_size()
 
-tgt_tokenizer = Tokenizer(WordLevel(unk_token="<UNK>"))
+tgt_tokenizer = Tokenizer(WordLevel(unk_token="<unk>"))
 tgt_tokenizer.pre_tokenizer = Whitespace()
 tgt_tokenizer.normalizer = Lowercase()
-trainer = WordLevelTrainer(special_tokens=["<UNK>", "<SOS>", "<EOS>", "<PAD>"], min_frequency=2)
+trainer = WordLevelTrainer(special_tokens=["<unk>", "<sos>", "<eos>", "<pad>"], min_frequency=2)
 tgt_tokenizer.train(["D:/robo_data/train.target"], trainer=trainer)
 tgt_vocab_size = tgt_tokenizer.get_vocab_size()
 
@@ -79,11 +79,11 @@ pairs = []
 with open("D:/robo_data/train.source", "r", encoding="UTF-8") as f:
     for line in f:
         if len(pairs1) < 500000:
-            pairs1.append(line)
+            pairs1.append(line.lower())
 with open("D:/robo_data/train.target", "r", encoding="UTF-8") as f:
     for line in f:
         if len(pairs2) < 500000:
-            pairs2.append(line)
+            pairs2.append(line.lower())
 for i in range(len(pairs1)):
     pairs.append([pairs1[i], pairs2[i]])
 
@@ -96,22 +96,22 @@ for q in range(len(pairs)):
     datain_e = src_tokenizer.encode(pairs[q][0]).ids
     dataout_e = tgt_tokenizer.encode(pairs[q][1]).ids
 
-    datain_e.insert(0, src_tokenizer.token_to_id("<SOS>"))
-    datain_e.append(src_tokenizer.token_to_id("<EOS>"))
+    datain_e.insert(0, src_tokenizer.token_to_id("<sos>"))
+    datain_e.append(src_tokenizer.token_to_id("<eos>"))
     if len(datain_e) < block_size:
         incm = [1]*len(datain_e) + [0]*(block_size - len(datain_e))
-        datain_e.extend([src_tokenizer.token_to_id("<PAD>")]*(block_size - len(datain_e)))
+        datain_e.extend([src_tokenizer.token_to_id("<pad>")]*(block_size - len(datain_e)))
     else:
         incm = [1]*len(datain_e)
 
-    dataout_e.insert(0, tgt_tokenizer.token_to_id("<SOS>"))
+    dataout_e.insert(0, tgt_tokenizer.token_to_id("<sos>"))
     #rand = random.randint(1, len(dataout_e))
     #dataout_e = dataout_e[:rand]
-    dataout_e.append(tgt_tokenizer.token_to_id("<EOS>"))
+    dataout_e.append(tgt_tokenizer.token_to_id("<eos>"))
     
     if len(dataout_e) < block_size:
         outcm = [1]*len(dataout_e) + [0]*(block_size - len(dataout_e))
-        dataout_e.extend([tgt_tokenizer.token_to_id("<PAD>")]*(block_size - len(dataout_e)))
+        dataout_e.extend([tgt_tokenizer.token_to_id("<pad>")]*(block_size - len(dataout_e)))
     else:
         outcm = [1]*len(dataout_e)
 
@@ -424,14 +424,14 @@ class LangMod(nn.Module):
             probs = F.log_softmax(logits, dim=-1) # (B,C)
             idx_next = torch.max(probs, dim=1).indices.unsqueeze(0) # (B,1)
             idx = torch.cat((idx, idx_next), dim=1) # (B, T+1)
-            if idx_next[0] == tgt_tokenizer.token_to_id("<EOS>"):
+            if idx_next[0] == tgt_tokenizer.token_to_id("<eos>"):
                 break
 
         return idx
     
     
 model = LangMod()
-loss_fn = nn.CrossEntropyLoss(ignore_index=tgt_tokenizer.token_to_id("<PAD>"), label_smoothing=0.1).to(device)
+loss_fn = nn.CrossEntropyLoss(ignore_index=tgt_tokenizer.token_to_id("<pad>"), label_smoothing=0.1).to(device)
 
 
 print(sum(p.numel() for p in model.parameters())/1e6, "M parameters")
@@ -463,8 +463,8 @@ while on:
     if q == "quit":
         on = False
     else:
-        gen = torch.tensor([[tgt_tokenizer.token_to_id("<SOS>")]], dtype=torch.long, device=device)
-        encodedin = src_tokenizer.encode("<SOS> "+q).ids
+        gen = torch.tensor([[tgt_tokenizer.token_to_id("<sos>")]], dtype=torch.long, device=device)
+        encodedin = src_tokenizer.encode("<sos> "+q.lower()).ids
         #if len(encodedin) < block_size-1:
         #    inputmask = torch.tensor([[1]*len(encodedin) + [0]*(block_size-len(encodedin)-1)], dtype=torch.int)
         #    encodedin.extend([220]*(block_size-len(encodedin)-1))
