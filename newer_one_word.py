@@ -442,6 +442,7 @@ for iter in range(max_iters):
     if iter % eval_interval == 0 or iter == max_iters -1:
         losses = estimate_loss()
         print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
+
     model.train()
 
     xbi, xbo, ybi, ybo, min, mout = get_batch("train")
@@ -451,6 +452,15 @@ for iter in range(max_iters):
 
     proj_output = model(xbi, xbo, min, mout)
     loss = loss_fn(proj_output.view(-1, tgt_tokenizer.get_vocab_size()), ybo.view(-1))
+
+    if iter % eval_interval == 0:
+        torch.save({
+            "iter": iter,
+            "model_state_dict": model.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
+            "loss": loss
+        }, "D:/checkpoint.pt")
+
     print(loss)
     loss.backward()
     optimizer.step()
