@@ -165,7 +165,7 @@ def get_batch(split):
 
     min = torch.stack([inmask[i][:block_size-1] for i in ix])
     mout = torch.stack([outmask[i][:block_size-1] for i in ix])
-    xin, xout, yin, yout = xin.to(device), xout.to(device), yin.to(device), yout.to(device)
+    xin, xout, yin, yout, min, mout = xin.to(device), xout.to(device), yin.to(device), yout.to(device), min.to(device), mout.to(device)
     return xin, xout, yin, yout, min, mout
 
 @torch.no_grad()
